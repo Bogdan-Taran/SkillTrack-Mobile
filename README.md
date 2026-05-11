@@ -1,17 +1,18 @@
-# skilltrack
 
-A new Flutter project.
+# SkillTrack Mobile
 
-## Getting Started
+Мобильное приложение студента для ведения учебных IT-проектов, задач,
+дедлайнов, навыков и личного портфолио.
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Стек приложения
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Это приложение разрабатывается с использованием следующего стека:
+
+- State Management: [![riverpod](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT-OVpLbWvkHA5BSWV7FbKnJ8cW9R-jqOoY4A&s$0)](https://riverpod.dev/)
+
+
+
+
+
