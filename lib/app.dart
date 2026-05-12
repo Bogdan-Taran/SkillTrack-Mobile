@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:skilltrack/src/features/auth/routing/auth_routes.dart';
 import 'src/routing/app_routes.dart';
 
@@ -8,21 +9,23 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Получаем конфигурацию роутера из провайдера
     final router = ref.watch(routerProvider);
 
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'SkillTrack',
-
-      // Настройка темы
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-      ),
-
-      // Настройка навигации
-      routerConfig: router,
+    return ScreenUtilInit(
+      designSize: const Size(402, 874),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'SkillTrack',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorSchemeSeed: Colors.blue,
+          ),
+          routerConfig: router,
+        );
+      },
     );
   }
 }

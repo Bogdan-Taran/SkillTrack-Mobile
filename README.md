@@ -10,8 +10,9 @@
 
 Это приложение разрабатывается с использованием следующего стека:
 
-- State Management: [![riverpod](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT-OVpLbWvkHA5BSWV7FbKnJ8cW9R-jqOoY4A&s$0)](https://riverpod.dev/)
-
+- State Management: [riverpod](https://riverpod.dev/)
+- Introduction screen (onboarding): [introduction_screen](https://pub.dev/packages/introduction_screen/example)
+- Adaptive UI: [ScreenUtil](https://pub.dev/packages/introduction_screen/example)
 
 
 
