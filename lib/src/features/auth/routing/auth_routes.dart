@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:talker_flutter/talker_flutter.dart';
 
+import '../../../core/utils/logger.dart';
 import '../application/auth_provider.dart';
 import '../presentation/login_screen.dart';
 import '../../home/presentation/home_screen.dart';
@@ -19,8 +21,14 @@ GoRouter router(Ref ref) {
 
   return GoRouter(
     initialLocation: '/',
+    observers: [TalkerRouteObserver(talker)],
     refreshListenable: Listenable.merge([authNotifier, onboardingNotifier]),
     redirect: (context, state) {
+      // Ждем завершения инициализации обоих провайдеров
+      if (!authNotifier.isInitialized || !onboardingNotifier.isInitialized) {
+        return null;
+      }
+
       final isOnboardingCompleted = onboardingNotifier.isCompleted;
       final isAuthenticated = authNotifier.isAuthenticated;
 
@@ -28,26 +36,24 @@ GoRouter router(Ref ref) {
       final isRegistering = state.matchedLocation == '/register';
       final isOnboarding = state.matchedLocation == '/onboarding';
 
-      // если онбординг не пройден — отправляем на онбординг
+      // Если пользователь авторизован, он не должен видеть онбординг или экраны входа
+      if (isAuthenticated) {
+        if (isLoggingIn || isRegistering || isOnboarding) {
+          return '/';
+        }
+        return null;
+      }
+
+      // Если онбординг не пройден — отправляем на онбординг
       if (!isOnboardingCompleted) {
         return isOnboarding ? null : '/onboarding';
       }
 
-      // если онбординг пройден, но не авторизован
-      if (!isAuthenticated) {
-        // если юзер уже на логине или регистрации - остаемся
-        if (isLoggingIn || isRegistering) return null;
-        
-        // по умолчанию после онбординга отправляем на регистрацию
-        return '/register';
-      }
-
-      // если авторизован и пытается зайти на служебные экраны - на главную
-      if (isAuthenticated && (isLoggingIn || isRegistering || isOnboarding)) {
-        return '/';
-      }
-
-      return null;
+      // Если онбординг пройден, но не авторизован
+      if (isLoggingIn || isRegistering) return null;
+      
+      // По умолчанию после онбординга отправляем на регистрацию
+      return '/register';
     },
     routes: [
       GoRoute(

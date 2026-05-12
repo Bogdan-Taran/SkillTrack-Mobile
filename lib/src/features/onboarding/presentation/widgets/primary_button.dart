@@ -7,12 +7,14 @@ class PrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final double? width;
+  final bool isLoading;
 
   const PrimaryButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.width,
+    this.isLoading = false,
   });
 
   @override
@@ -20,7 +22,7 @@ class PrimaryButton extends StatelessWidget {
     return SizedBox(
       width: width,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textWhite,
@@ -34,13 +36,23 @@ class PrimaryButton extends StatelessWidget {
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: Text(
-          text,
-          style: AppTextStyles.buttonText,
-          maxLines: 1,
-          softWrap: false, // Запрещаем перенос строки
-          overflow: TextOverflow.visible, // Разрешаем выходить за границы, если не хватает пары пикселей
-        ),
+        child: isLoading
+            ? SizedBox(
+                height: 20.h,
+                width: 20.h,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.textWhite,
+                ),
+              )
+            : Text(
+                text,
+                style: AppTextStyles.buttonText,
+                maxLines: 1,
+                softWrap: false, // Запрещаем перенос строки
+                overflow:
+                    TextOverflow.visible, // Разрешаем выходить за границы, если не хватает пары пикселей
+              ),
       ),
     );
   }

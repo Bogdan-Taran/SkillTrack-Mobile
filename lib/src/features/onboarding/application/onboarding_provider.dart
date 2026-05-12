@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../auth/application/auth_provider.dart';
 
 part 'onboarding_provider.g.dart';
 
@@ -7,13 +8,25 @@ part 'onboarding_provider.g.dart';
 class OnboardingNotifier extends _$OnboardingNotifier implements Listenable {
   VoidCallback? _listener;
   bool _isCompleted = false;
+  bool _isInitialized = false;
 
   @override
-  bool build() => _isCompleted;
+  bool build() {
+    _loadOnboardingStatus();
+    return _isCompleted;
+  }
 
   bool get isCompleted => _isCompleted;
+  bool get isInitialized => _isInitialized;
 
-  void completeOnboarding() {
+  Future<void> _loadOnboardingStatus() async {
+    _isCompleted = await ref.read(authServiceProvider).isOnboardingCompleted();
+    _isInitialized = true;
+    _notify();
+  }
+
+  Future<void> completeOnboarding() async {
+    await ref.read(authServiceProvider).setOnboardingCompleted();
     _isCompleted = true;
     _notify();
   }
