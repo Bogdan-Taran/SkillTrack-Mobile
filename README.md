@@ -14,6 +14,8 @@
 - Introduction screen (onboarding): [introduction_screen](https://pub.dev/packages/introduction_screen/example)
 - Adaptive UI: [ScreenUtil](https://pub.dev/packages/introduction_screen/example)
 - Secure Token Storage: [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)
+- Логирование: [talker_flutter](https://pub.dev/packages/talker_flutter), [talker_riverpod_logger](https://pub.dev/packages/talker_riverpod_logger)
+
 
 Тестовые данны для входа (можно и зарегистрироваться):
 login: test@test.com
