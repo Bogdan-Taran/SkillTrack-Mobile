@@ -7,7 +7,8 @@ import '../application/auth_provider.dart';
 import '../presentation/login_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../onboarding/application/onboarding_provider.dart';
-import '../../onboarding/presentation/introduction_screen_1.dart';
+import '../../onboarding/presentation/pages/introduction_screen.dart';
+import '../presentation/register_screen.dart';
 
 part 'auth_routes.g.dart';
 
@@ -24,22 +25,25 @@ GoRouter router(Ref ref) {
       final isAuthenticated = authNotifier.isAuthenticated;
 
       final isLoggingIn = state.matchedLocation == '/login';
+      final isRegistering = state.matchedLocation == '/register';
       final isOnboarding = state.matchedLocation == '/onboarding';
 
-      // 1. Если онбординг не пройден — отправляем на онбординг
+      // если онбординг не пройден — отправляем на онбординг
       if (!isOnboardingCompleted) {
         return isOnboarding ? null : '/onboarding';
       }
 
-      // 2. Если онбординг пройден, но не авторизован — отправляем на логин
+      // если онбординг пройден, но не авторизован
       if (!isAuthenticated) {
-        if (isLoggingIn) return null;
-        // Если юзер на странице онбординга, но он уже завершен — на логин
-        return '/login';
+        // если юзер уже на логине или регистрации - остаемся
+        if (isLoggingIn || isRegistering) return null;
+        
+        // по умолчанию после онбординга отправляем на регистрацию
+        return '/register';
       }
 
-      // 3. Если авторизован и пытается зайти на логин или онбординг — на главную
-      if (isAuthenticated && (isLoggingIn || isOnboarding)) {
+      // если авторизован и пытается зайти на служебные экраны - на главную
+      if (isAuthenticated && (isLoggingIn || isRegistering || isOnboarding)) {
         return '/';
       }
 
@@ -52,7 +56,11 @@ GoRouter router(Ref ref) {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => LoginScreen(),
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/onboarding',
