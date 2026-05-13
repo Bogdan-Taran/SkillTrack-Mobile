@@ -6,7 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../auth/application/auth_provider.dart';
+import '../../../projects/application/projects_provider.dart';
 import '../../../projects/presentation/pages/projects_screen.dart';
+import '../../../projects/presentation/pages/project_details_screen.dart';
 import '../widgets/progress_card.dart';
 import '../widgets/project_card.dart';
 import '../widgets/task_card.dart';
@@ -20,6 +22,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
+  String? _selectedProjectId;
 
   @override
   Widget build(BuildContext context) {
@@ -36,13 +39,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           // Content
           IndexedStack(
-            index: _selectedIndex,
+            index: _selectedProjectId != null ? 3 : _selectedIndex,
             children: [
               _buildHomeContent(),
               ProjectsScreen(
                 onBack: () => setState(() => _selectedIndex = 0),
+                onProjectTap: (id) => setState(() => _selectedProjectId = id),
               ),
               const Center(child: Text('Profile', style: TextStyle(color: Colors.white))),
+              if (_selectedProjectId != null)
+                ProjectDetailsScreen(
+                  projectId: _selectedProjectId!,
+                  onBack: () => setState(() => _selectedProjectId = null),
+                )
+              else
+                const SizedBox.shrink(),
             ],
           ),
         ],
@@ -68,6 +79,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHomeContent() {
+    final projects = ref.watch(projectsProvider);
+    
+    // Flatten all tasks from all projects
+    final allTasks = projects.expand((p) => p.tasks.map((t) => (task: t, projectName: p.title))).toList();
+    // Sort by deadline
+    allTasks.sort((a, b) => a.task.deadline.compareTo(b.task.deadline));
+    
+    final pendingTasksCount = allTasks.where((item) => item.task.status != 'Готово').length;
+
     return SafeArea(
       child: Column(
         children: [
@@ -122,33 +142,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   Text(
-                    '4 задачи ждут выполнения',
+                    '$pendingTasksCount ${pendingTasksCount == 1 ? 'задача ждет' : 'задач ждут'} выполнения',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 14.sp,
                     ),
                   ),
                   SizedBox(height: 16.h),
-                  const TaskCard(
-                    title: 'Сделать главную страницу',
-                    project: 'Семейное древо',
-                    priority: 'P1',
-                  ),
-                  const TaskCard(
-                    title: 'Сверстать страницу "проекты"',
-                    project: 'Семейное древо',
-                    priority: 'P2',
-                  ),
-                  const TaskCard(
-                    title: 'Добавить логику CRUD в проекты',
-                    project: 'Семейное древо',
-                    priority: 'P2',
-                  ),
-                  const TaskCard(
-                    title: 'CRUD задач',
-                    project: 'Семейное древо',
-                    priority: 'P2',
-                  ),
+                  if (allTasks.isEmpty)
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                      child: Text('Нет текущих задач', style: TextStyle(color: Colors.grey, fontSize: 14.sp)),
+                    )
+                  else
+                    ...allTasks.take(4).map((item) => TaskCard(
+                      title: item.task.title,
+                      project: item.projectName,
+                      priority: item.task.priority,
+                    )),
                   
                   SizedBox(height: 24.h),
                   
@@ -171,15 +182,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                         SizedBox(height: 16.h),
-                        ProjectCard(
-                          title: 'Семейное древо',
-                          onTap: () => setState(() => _selectedIndex = 1),
-                        ),
-                        ProjectCard(
-                          title: 'Сервис по созданию фотоальб',
-                          isLast: true,
-                          onTap: () => setState(() => _selectedIndex = 1),
-                        ),
+                        if (projects.isEmpty)
+                          Text('У вас пока нет проектов', style: TextStyle(color: Colors.grey, fontSize: 14.sp))
+                        else
+                          ...projects.take(3).toList().asMap().entries.map((entry) => ProjectCard(
+                            title: entry.value.title,
+                            isLast: entry.key == (projects.length < 3 ? projects.length - 1 : 2),
+                            onTap: () {
+                              setState(() {
+                                _selectedProjectId = entry.value.id;
+                                _selectedIndex = 1;
+                              });
+                            },
+                          )),
                       ],
                     ),
                   ),

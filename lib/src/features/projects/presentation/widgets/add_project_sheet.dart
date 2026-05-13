@@ -1,29 +1,121 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
-import 'add_task_sheet.dart';
+import '../../application/projects_provider.dart';
+import '../../domain/models/project_model.dart';
+import '../../domain/models/task_model.dart';
+import 'task_item_small.dart';
 
-class AddProjectSheet extends StatefulWidget {
-  const AddProjectSheet({super.key});
+class AddProjectSheet extends ConsumerStatefulWidget {
+  final ProjectModel? project;
+  const AddProjectSheet({super.key, this.project});
 
   @override
-  State<AddProjectSheet> createState() => _AddProjectSheetState();
+  ConsumerState<AddProjectSheet> createState() => _AddProjectSheetState();
 }
 
-class _AddProjectSheetState extends State<AddProjectSheet> {
-  void _showAddTask() {
-    showModalBottomSheet(
+class _AddProjectSheetState extends ConsumerState<AddProjectSheet> {
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  DateTime? selectedDate;
+  List<TaskModel> _tasks = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.project?.title);
+    _descriptionController = TextEditingController(text: widget.project?.description);
+    selectedDate = widget.project?.deadline;
+    _tasks = widget.project?.tasks != null ? List.from(widget.project!.tasks) : [];
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: const Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => selectedDate = picked);
+    }
+  }
+
+  void _showAddTask() async {
+    final task = await showModalBottomSheet<TaskModel>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const AddTaskSheet(),
+      builder: (context) => const _LocalAddTaskSheet(),
     );
+
+    if (task != null) {
+      setState(() {
+        _tasks.add(task);
+      });
+    }
+  }
+
+  void _saveProject() {
+    if (_titleController.text.isEmpty || selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Пожалуйста, заполните название и дату')),
+      );
+      return;
+    }
+
+    if (widget.project != null) {
+      final updatedProject = widget.project!.copyWith(
+        title: _titleController.text,
+        description: _descriptionController.text,
+        deadline: selectedDate!,
+        tasks: _tasks,
+      );
+      ref.read(projectsProvider.notifier).updateProject(updatedProject);
+    } else {
+      final newProject = ProjectModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: _titleController.text,
+        description: _descriptionController.text,
+        deadline: selectedDate!,
+        tasks: _tasks,
+      );
+      ref.read(projectsProvider.notifier).addProject(newProject);
+    }
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.only(
+        left: 20.w,
+        right: 20.w,
+        top: 20.w,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20.w,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
@@ -33,34 +125,30 @@ class _AddProjectSheetState extends State<AddProjectSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Project Name Input
+            Text(
+              widget.project == null ? 'Новый проект' : 'Редактировать проект',
+              style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16.h),
             TextField(
+              controller: _titleController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Название проекта',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 16.sp),
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.primary),
-                ),
+                enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
               ),
             ),
             SizedBox(height: 20.h),
-            // Project Description Input
             TextField(
-              maxLines: 4,
+              controller: _descriptionController,
+              maxLines: 3,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Описание проекта',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 16.sp),
-                filled: true,
-                fillColor: Colors.transparent,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Colors.grey),
@@ -68,133 +156,179 @@ class _AddProjectSheetState extends State<AddProjectSheet> {
               ),
             ),
             SizedBox(height: 20.h),
-            // Deadline Picker
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    readOnly: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Срок сдачи',
-                      hintStyle: TextStyle(color: Colors.grey, fontSize: 16.sp),
-                      enabledBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                ),
-                Icon(Icons.calendar_month, color: Colors.white, size: 30.sp),
-              ],
-            ),
-            SizedBox(height: 24.h),
-            
-            // Mock Task Item (as seen in design)
-            Container(
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2C),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
+            GestureDetector(
+              onTap: () => _selectDate(context),
               child: Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Написать аналитику проекта',
-                          style: TextStyle(color: Colors.white, fontSize: 14.sp),
-                        ),
-                        Text(
-                          '13 мая 2026',
-                          style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-                        ),
-                      ],
+                    child: Text(
+                      selectedDate == null
+                          ? 'Срок сдачи'
+                          : 'Дедлайн: ${DateFormat('dd MMM yyyy', 'ru').format(selectedDate!)}',
+                      style: TextStyle(
+                        color: selectedDate == null ? Colors.grey : Colors.white,
+                        fontSize: 16.sp,
+                      ),
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF8B0000),
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Text(
-                          'Бэклог',
-                          style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Container(
-                        width: 24.w,
-                        height: 24.h,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'P0',
-                            style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  Icon(Icons.calendar_month, color: Colors.white, size: 28.sp),
                 ],
               ),
             ),
-            
-            SizedBox(height: 16.h),
-            // Add Task Button
+            SizedBox(height: 24.h),
+            if (_tasks.isNotEmpty) ...[
+              Text('Задачи проекта:', style: TextStyle(color: Colors.grey, fontSize: 14.sp)),
+              SizedBox(height: 12.h),
+              ..._tasks.map((task) => TaskItemSmall(
+                task: task,
+                onTap: () => setState(() => _tasks.remove(task)),
+              )),
+            ],
             GestureDetector(
               onTap: _showAddTask,
-              child: Row(
-                children: [
-                  Icon(Icons.add_circle, color: Colors.white, size: 28.sp),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'Добавить задачу',
-                    style: TextStyle(color: Colors.white, fontSize: 16.sp),
-                  ),
-                ],
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                child: Row(
+                  children: [
+                    Icon(Icons.add_circle_outline, color: AppColors.primary, size: 24.sp),
+                    SizedBox(width: 8.w),
+                    Text('Добавить задачу', style: TextStyle(color: AppColors.primary, fontSize: 16.sp)),
+                  ],
+                ),
               ),
             ),
-            
             SizedBox(height: 32.h),
-            // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Отмена',
-                    style: TextStyle(color: Colors.white, fontSize: 16.sp),
-                  ),
+                  child: Text('Отмена', style: TextStyle(color: Colors.white70, fontSize: 16.sp)),
                 ),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _saveProject,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 12.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
                   ),
-                  child: Text(
-                    'Сохранить',
-                    style: TextStyle(color: Colors.white, fontSize: 16.sp),
-                  ),
+                  child: Text('Сохранить', style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
             SizedBox(height: 20.h),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LocalAddTaskSheet extends StatefulWidget {
+  const _LocalAddTaskSheet();
+  @override
+  State<_LocalAddTaskSheet> createState() => _LocalAddTaskSheetState();
+}
+
+class _LocalAddTaskSheetState extends State<_LocalAddTaskSheet> {
+  final _titleController = TextEditingController();
+  DateTime? selectedDate;
+  String selectedPriority = 'P1';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20.w,
+        right: 20.w,
+        top: 20.w,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20.w,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Новая задача',
+            style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 16.h),
+          TextField(
+            controller: _titleController,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Название задачи',
+              hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          Row(
+            children: [
+              Text('Приоритет:', style: TextStyle(color: Colors.white, fontSize: 14.sp)),
+              SizedBox(width: 12.w),
+              ...['P0', 'P1', 'P2', 'P3', 'P4'].map((p) => Padding(
+                padding: EdgeInsets.only(right: 8.w),
+                child: ChoiceChip(
+                  label: Text(p),
+                  selected: selectedPriority == p,
+                  onSelected: (selected) {
+                    if (selected) setState(() => selectedPriority = p);
+                  },
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  selectedColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: selectedPriority == p ? Colors.black : Colors.white,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              )),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2101),
+                    );
+                    if (date != null) setState(() => selectedDate = date);
+                  },
+                  icon: const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
+                  label: Text(
+                    selectedDate == null ? 'Выбрать дату' : DateFormat('dd.MM.yyyy').format(selectedDate!),
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (_titleController.text.isNotEmpty && selectedDate != null) {
+                    Navigator.pop(context, TaskModel(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      title: _titleController.text,
+                      deadline: selectedDate!,
+                      priority: selectedPriority,
+                      status: 'К исполнению',
+                    ));
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                child: const Text('Добавить', style: TextStyle(color: Colors.black)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

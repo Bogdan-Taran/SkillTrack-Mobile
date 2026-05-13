@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../application/projects_provider.dart';
 import '../widgets/add_project_sheet.dart';
 import '../widgets/project_list_item.dart';
 
-class ProjectsScreen extends StatelessWidget {
+class ProjectsScreen extends ConsumerWidget {
   final VoidCallback onBack;
+  final Function(String)? onProjectTap;
 
-  const ProjectsScreen({super.key, required this.onBack});
+  const ProjectsScreen({
+    super.key,
+    required this.onBack,
+    this.onProjectTap,
+  });
 
   void _showAddProject(BuildContext context) {
     showModalBottomSheet(
@@ -20,7 +27,9 @@ class ProjectsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final projects = ref.watch(projectsProvider);
+
     return Scaffold(
       backgroundColor: Colors.transparent, // Background will be handled by HomeScreen's Stack
       body: SafeArea(
@@ -53,22 +62,25 @@ class ProjectsScreen extends StatelessWidget {
               SizedBox(height: 32.h),
               // Projects List
               Expanded(
-                child: ListView(
-                  children: [
-                    ProjectListItem(
-                      title: 'Семейное древо',
-                      author: 'Михалёв Р. Г.',
-                      date: '13 мая 2026',
-                      onTap: () {},
-                    ),
-                    ProjectListItem(
-                      title: 'Сервис по созданию фот',
-                      author: 'Михалёв Р. Г.',
-                      date: '13 мая 2026',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
+                child: projects.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Нет проектов',
+                          style: TextStyle(color: Colors.white, fontSize: 16.sp),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: projects.length,
+                        itemBuilder: (context, index) {
+                          final project = projects[index];
+                          return ProjectListItem(
+                            title: project.title,
+                            author: 'Вы', // Replace with real author if needed
+                            date: project.deadline.toString().split(' ')[0], // Simple format
+                            onTap: () => onProjectTap?.call(project.id),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
