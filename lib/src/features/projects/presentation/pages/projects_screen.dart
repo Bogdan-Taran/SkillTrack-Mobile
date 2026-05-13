@@ -2,12 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../widgets/add_project_sheet.dart';
 import '../widgets/project_list_item.dart';
 
 class ProjectsScreen extends StatelessWidget {
   final VoidCallback onBack;
 
   const ProjectsScreen({super.key, required this.onBack});
+
+  void _showAddProject(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddProjectSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +75,7 @@ class ProjectsScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => _showAddProject(context),
         backgroundColor: AppColors.primary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30.r),
