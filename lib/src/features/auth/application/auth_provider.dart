@@ -34,10 +34,10 @@ class Auth extends _$Auth implements Listenable {
   Future<void> _checkToken() async {
     final hasToken = await ref.read(authServiceProvider).hasToken();
     if (hasToken) {
-      talker.info('Persistent session found, authenticating...');
+      talker.info('сессия найдена, аворизация');
       state = true;
     } else {
-      talker.info('No persistent session found');
+      talker.info('не найдено сессий');
     }
     _isInitialized = true;
     _notify();
