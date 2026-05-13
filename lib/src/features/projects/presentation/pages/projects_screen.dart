@@ -28,7 +28,7 @@ class ProjectsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final projects = ref.watch(projectsProvider);
+    final projectsAsync = ref.watch(projectsProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent, // Background will be handled by HomeScreen's Stack
@@ -62,25 +62,29 @@ class ProjectsScreen extends ConsumerWidget {
               SizedBox(height: 32.h),
               // Projects List
               Expanded(
-                child: projects.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Нет проектов',
-                          style: TextStyle(color: Colors.white, fontSize: 16.sp),
+                child: projectsAsync.when(
+                  data: (projects) => projects.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Нет проектов',
+                            style: TextStyle(color: Colors.white, fontSize: 16.sp),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: projects.length,
+                          itemBuilder: (context, index) {
+                            final project = projects[index];
+                            return ProjectListItem(
+                              title: project.title,
+                              author: 'Вы', // Replace with real author if needed
+                              date: project.deadline.toString().split(' ')[0], // Simple format
+                              onTap: () => onProjectTap?.call(project.id),
+                            );
+                          },
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: projects.length,
-                        itemBuilder: (context, index) {
-                          final project = projects[index];
-                          return ProjectListItem(
-                            title: project.title,
-                            author: 'Вы', // Replace with real author if needed
-                            date: project.deadline.toString().split(' ')[0], // Simple format
-                            onTap: () => onProjectTap?.call(project.id),
-                          );
-                        },
-                      ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.red))),
+                ),
               ),
             ],
           ),

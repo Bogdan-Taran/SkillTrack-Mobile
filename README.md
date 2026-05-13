@@ -19,6 +19,7 @@
 - Логирование: [talker_flutter](https://pub.dev/packages/talker_flutter), [talker_riverpod_logger](https://pub.dev/packages/talker_riverpod_logger)
 - Модели данных: [freezed](https://pub.dev/packages/freezed)
 - Network: [dio](https://pub.dev/packages/dio)
+- Local Storage: [sqflite](https://pub.dev/packages/sqflite)
 
 
 Тестовые данны для входа (можно и зарегистрироваться):

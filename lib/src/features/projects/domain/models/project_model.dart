@@ -5,7 +5,7 @@ part 'project_model.freezed.dart';
 part 'project_model.g.dart';
 
 @freezed
-abstract class ProjectModel with _$ProjectModel {
+class ProjectModel with _$ProjectModel {
   const factory ProjectModel({
     required String id,
     required String title,

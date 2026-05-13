@@ -4,7 +4,7 @@ part 'task_model.freezed.dart';
 part 'task_model.g.dart';
 
 @freezed
-abstract class TaskModel with _$TaskModel {
+class TaskModel with _$TaskModel {
   const factory TaskModel({
     required String id,
     required String title,

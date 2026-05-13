@@ -4,6 +4,8 @@ import '../../../core/utils/logger.dart';
 import '../domain/services/auth_service.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../data/repositories/auth_repository_impl.dart';
+import '../domain/models/user_model.dart';
+import '../data/repositories/local_user_repository.dart';
 
 part 'auth_provider.g.dart';
 
@@ -21,6 +23,7 @@ AuthRepository authRepository(Ref ref) {
 class Auth extends _$Auth implements Listenable {
   VoidCallback? _listener;
   bool _isInitialized = false;
+  UserModel? _user;
 
   @override
   bool build() {
@@ -30,11 +33,13 @@ class Auth extends _$Auth implements Listenable {
 
   bool get isAuthenticated => state;
   bool get isInitialized => _isInitialized;
+  UserModel? get user => _user;
 
   Future<void> _checkToken() async {
     final hasToken = await ref.read(authServiceProvider).hasToken();
     if (hasToken) {
       talker.info('сессия найдена, аворизация');
+      _user = await ref.read(localUserRepositoryProvider).getUser();
       state = true;
     } else {
       talker.info('не найдено сессий');
@@ -48,6 +53,11 @@ class Auth extends _$Auth implements Listenable {
     try {
       final token = await ref.read(authRepositoryProvider).login(email, password);
       await ref.read(authServiceProvider).saveToken(token);
+      
+      // For now, mock user data after login
+      _user = UserModel(id: '1', name: 'Иван Иванов', email: email);
+      await ref.read(localUserRepositoryProvider).saveUser(_user!);
+      
       state = true;
       talker.log('Login successful for: $email');
       _notify();
@@ -72,6 +82,10 @@ class Auth extends _$Auth implements Listenable {
         password: password,
       );
       await ref.read(authServiceProvider).saveToken(token);
+      
+      _user = UserModel(id: '1', name: '$firstName $lastName', email: email);
+      await ref.read(localUserRepositoryProvider).saveUser(_user!);
+
       state = true;
       talker.log('Registration successful for: $email');
       _notify();
@@ -85,6 +99,8 @@ class Auth extends _$Auth implements Listenable {
     talker.info('Logging out');
     await ref.read(authRepositoryProvider).logout();
     await ref.read(authServiceProvider).deleteToken();
+    await ref.read(localUserRepositoryProvider).deleteUser();
+    _user = null;
     state = false;
     talker.info('Logged out successfully');
     _notify();

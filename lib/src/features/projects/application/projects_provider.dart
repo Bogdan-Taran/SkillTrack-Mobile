@@ -1,75 +1,73 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/models/project_model.dart';
 import '../domain/models/task_model.dart';
-import '../data/repositories/project_repository.dart';
+import '../data/repositories/local_project_repository.dart';
 
 part 'projects_provider.g.dart';
 
 @riverpod
 class Projects extends _$Projects {
   @override
-  List<ProjectModel> build() {
-    // Eventually, we can use ref.watch(projectRepositoryProvider).getProjects()
-    // and handle the AsyncValue, but for now we keep it simple with synchronous state.
-    return []; 
+  FutureOr<List<ProjectModel>> build() async {
+    final repository = ref.watch(localProjectRepositoryProvider);
+    return repository.getProjects();
   }
 
   Future<void> addProject(ProjectModel project) async {
-    final repository = ref.read(projectRepositoryProvider);
-    final savedProject = await repository.createProject(project);
-    state = [...state, savedProject];
+    final repository = ref.read(localProjectRepositoryProvider);
+    await repository.saveProject(project);
+    
+    final currentProjects = state.valueOrNull ?? [];
+    state = AsyncData([...currentProjects, project]);
   }
 
   Future<void> updateProject(ProjectModel project) async {
-    final repository = ref.read(projectRepositoryProvider);
-    final updatedProject = await repository.updateProject(project);
-    state = [
-      for (final p in state)
-        if (p.id == updatedProject.id) updatedProject else p,
-    ];
+    final repository = ref.read(localProjectRepositoryProvider);
+    await repository.saveProject(project);
+    
+    final currentProjects = state.valueOrNull ?? [];
+    state = AsyncData([
+      for (final p in currentProjects)
+        if (p.id == project.id) project else p,
+    ]);
   }
 
   Future<void> deleteProject(String id) async {
-    final repository = ref.read(projectRepositoryProvider);
+    final repository = ref.read(localProjectRepositoryProvider);
     await repository.deleteProject(id);
-    state = state.where((p) => p.id != id).toList();
+    
+    final currentProjects = state.valueOrNull ?? [];
+    state = AsyncData(currentProjects.where((p) => p.id != id).toList());
   }
 
-  void addTaskToProject(String projectId, TaskModel task) {
-    state = [
-      for (final project in state)
-        if (project.id == projectId)
-          project.copyWith(tasks: [...project.tasks, task])
-        else
-          project,
-    ];
-    // In a real app, you'd also call the repository here
+  Future<void> addTaskToProject(String projectId, TaskModel task) async {
+    final currentProjects = state.valueOrNull ?? [];
+    final project = currentProjects.firstWhere((p) => p.id == projectId);
+    final updatedProject = project.copyWith(tasks: [...project.tasks, task]);
+    
+    await updateProject(updatedProject);
   }
 
-  void updateTaskInProject(String projectId, TaskModel task) {
-    state = [
-      for (final project in state)
-        if (project.id == projectId)
-          project.copyWith(
-            tasks: [
-              for (final t in project.tasks)
-                if (t.id == task.id) task else t,
-            ],
-          )
-        else
-          project,
-    ];
+  Future<void> updateTaskInProject(String projectId, TaskModel task) async {
+    final currentProjects = state.valueOrNull ?? [];
+    final project = currentProjects.firstWhere((p) => p.id == projectId);
+    final updatedProject = project.copyWith(
+      tasks: [
+        for (final t in project.tasks)
+          if (t.id == task.id) task else t,
+      ],
+    );
+    
+    await updateProject(updatedProject);
   }
 
-  void deleteTaskFromProject(String projectId, String taskId) {
-    state = [
-      for (final project in state)
-        if (project.id == projectId)
-          project.copyWith(
-            tasks: project.tasks.where((t) => t.id != taskId).toList(),
-          )
-        else
-          project,
-    ];
+  Future<void> deleteTaskFromProject(String projectId, String taskId) async {
+    final currentProjects = state.valueOrNull ?? [];
+    final project = currentProjects.firstWhere((p) => p.id == projectId);
+    final updatedProject = project.copyWith(
+      tasks: project.tasks.where((t) => t.id != taskId).toList(),
+    );
+    
+    await updateProject(updatedProject);
   }
 }
