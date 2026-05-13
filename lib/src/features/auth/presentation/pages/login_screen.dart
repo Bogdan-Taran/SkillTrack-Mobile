@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../onboarding/presentation/widgets/primary_button.dart';
-import '../application/auth_provider.dart';
-import 'widgets/auth_background.dart';
-import 'widgets/auth_text_field.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../onboarding/presentation/widgets/primary_button.dart';
+import '../../application/auth_provider.dart';
+import '../widgets/auth_background.dart';
+import '../widgets/auth_text_field.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

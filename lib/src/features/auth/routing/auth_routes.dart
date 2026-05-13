@@ -6,11 +6,11 @@ import 'package:talker_flutter/talker_flutter.dart';
 
 import '../../../core/utils/logger.dart';
 import '../application/auth_provider.dart';
-import '../presentation/login_screen.dart';
-import '../../home/presentation/home_screen.dart';
+import '../presentation/pages/login_screen.dart';
+import '../../home/presentation/pages/home_screen.dart';
 import '../../onboarding/application/onboarding_provider.dart';
 import '../../onboarding/presentation/pages/introduction_screen.dart';
-import '../presentation/register_screen.dart';
+import '../presentation/pages/register_screen.dart';
 
 part 'auth_routes.g.dart';
 
